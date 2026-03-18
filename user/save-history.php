@@ -9,8 +9,18 @@ if(!isset($_SESSION['user_id'])) {
 }
 
 $data = json_decode(file_get_contents('php://input'), true);
+
 if($data) {
-    $stmt = $pdo->prepare("INSERT INTO user_weather_history (id, location, temperature, cond, humidity, wind_speed, cloth_rec) VALUES (?, ?, ?, ?, ?, ?, ?)");
+
+    // ✅ GET ICON (avoid undefined error)
+    $icon = isset($data['icon']) ? $data['icon'] : null;
+
+    $stmt = $pdo->prepare("
+        INSERT INTO user_weather_history 
+        (id, location, temperature, cond, humidity, wind_speed, cloth_rec, icon) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+
     $stmt->execute([
         $_SESSION['user_id'],
         $data['location'],
@@ -18,8 +28,10 @@ if($data) {
         $data['cond'],
         $data['humidity'],
         $data['wind_speed'],
-        $data['cloth_rec']
+        $data['cloth_rec'],
+        $icon // ✅ NOW SAVED
     ]);
+
     echo json_encode(['success'=>true]);
 }
 ?>
