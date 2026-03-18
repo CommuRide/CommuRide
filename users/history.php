@@ -10,7 +10,6 @@ $user_id = $_SESSION['user_id'];
 if (isset($_POST['delete_selected']) && !empty($_POST['selected'])) {
 
     $ids = $_POST['selected'];
-
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
 
     $sql = "DELETE FROM user_weather_history 
@@ -18,20 +17,16 @@ if (isset($_POST['delete_selected']) && !empty($_POST['selected'])) {
             AND id = ?";
 
     $stmt = $pdo->prepare($sql);
-
     $params = array_merge($ids, [$user_id]);
-
     $stmt->execute($params);
 }
 
 /* ===== CLEAR ALL HISTORY ===== */
 if (isset($_POST['clear_all'])) {
-
     $stmt = $pdo->prepare("
         DELETE FROM user_weather_history
         WHERE id = ?
     ");
-
     $stmt->execute([$user_id]);
 }
 
@@ -42,7 +37,6 @@ $stmt = $pdo->prepare("
     WHERE id = ?
     ORDER BY searched_at DESC
 ");
-
 $stmt->execute([$user_id]);
 $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -53,88 +47,105 @@ renderHeader($title);
 <style>
 
 body {
-font-family: Arial, sans-serif;
-background-color: #f4f9fb;
-margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f4f9fb;
+    margin: 0;
 }
 
-/* NAVBAR */
-
+/* NAV */
 .nav {
-padding: 15px 25px;
-background-color: #1e88e5;
+    padding: 15px 25px;
+    background-color: #1e88e5;
 }
 
 .nav a {
-color: white;
-text-decoration: none;
-margin-right: 15px;
-font-weight: 500;
+    color: white;
+    margin-right: 15px;
+    text-decoration: none;
 }
 
-.nav a:hover {
-text-decoration: underline;
-}
-
-/* HISTORY CONTAINER */
-
+/* CONTAINER */
 .history-container {
-margin: 20px;
-padding: 25px;
-background: white;
-border-left: 6px solid #1e88e5;
-border-radius: 6px;
+    margin: 20px;
+    padding: 25px;
+    background: white;
+    border-left: 6px solid #1e88e5;
+    border-radius: 6px;
 }
 
-/* TABLE */
-
-table {
-width: 100%;
-border-collapse: collapse;
-margin-top: 20px;
+/* SEARCH BAR */
+.search-bar {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-top: 10px;
 }
 
-th {
-background: #1e88e5;
-color: white;
-padding: 10px;
-text-align: left;
+/* GRID */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
 }
 
-td {
-padding: 10px;
-border-bottom: 1px solid #ddd;
+/* CARD */
+.card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+    position: relative;
+    transition: 0.3s;
 }
 
-tr:hover {
-background: #f1f1f1;
+.card:hover {
+    transform: translateY(-5px);
+}
+
+/* ICON (API) */
+.weather-icon {
+    display: block;
+    margin: 15px auto 0;
+    width: 80px;
+}
+
+/* CONTENT */
+.card-content {
+    padding: 15px;
+    text-align: center;
+}
+
+.card-content h3 {
+    margin: 5px 0;
+    color: #1e88e5;
+}
+
+/* CHECKBOX */
+.card-checkbox {
+    position: absolute;
+    top: 10px;
+    left: 10px;
 }
 
 /* BUTTONS */
-
 button {
-padding: 8px 12px;
-border: none;
-border-radius: 4px;
-cursor: pointer;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 15px;
 }
 
 .delete-btn {
-background: #e53935;
-color: white;
-}
-
-.delete-btn:hover {
-background: #c62828;
+    background: #e53935;
+    color: white;
 }
 
 .clear-btn {
-background: #ef6c00;
-color: white;
-}
-
-.clear-btn:hover {
-background: #d84315;
+    background: #ef6c00;
+    color: white;
 }
 
 </style>
@@ -149,58 +160,56 @@ background: #d84315;
 
 <h2>Your Weather Search History</h2>
 
+<!-- SEARCH BAR -->
+<input type="text" id="searchInput" class="search-bar" placeholder="Search location or condition...">
+
 <form method="POST">
 
-<table>
-
-<tr>
-<th>Select</th>
-<th>Date</th>
-<th>Location</th>
-<th>Temperature</th>
-<th>Condition</th>
-<th>Humidity</th>
-<th>Wind Speed</th>
-<th>Clothing Recommendation</th>
-</tr>
+<div class="card-grid" id="cardGrid">
 
 <?php if ($history): ?>
 
-<?php foreach ($history as $row): ?>
+<?php foreach ($history as $row): 
 
-<tr>
+    // 🔥 Use stored icon if you have one, otherwise default
+    $icon = !empty($row['icon']) ? $row['icon'] : "01d"; 
+    $iconUrl = "https://openweathermap.org/img/wn/" . $icon . "@2x.png";
 
-<td>
-<input type="checkbox" name="selected[]" value="<?php echo $row['search_id']; ?>">
-</td>
+?>
 
-<td><?php echo $row['searched_at']; ?></td>
+<div class="card" data-search="<?php echo strtolower($row['location'] . ' ' . $row['cond']); ?>">
 
-<td><?php echo htmlspecialchars($row['location']); ?></td>
+<input type="checkbox" 
+       class="card-checkbox"
+       name="selected[]" 
+       value="<?php echo $row['search_id']; ?>">
 
-<td><?php echo $row['temperature']; ?> °C</td>
+<img src="<?php echo $iconUrl; ?>" class="weather-icon">
 
-<td><?php echo htmlspecialchars($row['cond']); ?></td>
+<div class="card-content">
 
-<td><?php echo $row['humidity']; ?> %</td>
+<h3><?php echo htmlspecialchars($row['location']); ?></h3>
 
-<td><?php echo $row['wind_speed']; ?> m/s</td>
+<p><strong>Date:</strong> <?php echo $row['searched_at']; ?></p>
+<p><strong>Temp:</strong> <?php echo $row['temperature']; ?> °C</p>
+<p><strong><?php echo htmlspecialchars($row['cond']); ?></strong></p>
+<p>Humidity: <?php echo $row['humidity']; ?> %</p>
+<p>Wind: <?php echo $row['wind_speed']; ?> m/s</p>
+<p><strong>👕 <?php echo htmlspecialchars($row['cloth_rec']); ?></strong></p>
 
-<td><?php echo htmlspecialchars($row['cloth_rec']); ?></td>
+</div>
 
-</tr>
+</div>
 
 <?php endforeach; ?>
 
 <?php else: ?>
 
-<tr>
-<td colspan="8">No search history found.</td>
-</tr>
+<p>No search history found.</p>
 
 <?php endif; ?>
 
-</table>
+</div>
 
 <br>
 
@@ -216,5 +225,25 @@ Clear All History
 </form>
 
 </div>
+
+<!-- 🔍 SEARCH SCRIPT -->
+<script>
+document.getElementById('searchInput').addEventListener('keyup', function() {
+
+    let value = this.value.toLowerCase();
+    let cards = document.querySelectorAll('.card');
+
+    cards.forEach(card => {
+        let text = card.getAttribute('data-search');
+
+        if (text.includes(value)) {
+            card.style.display = "block";
+        } else {
+            card.style.display = "none";
+        }
+    });
+
+});
+</script>
 
 <?php renderFooter(); ?>
