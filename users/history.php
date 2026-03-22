@@ -9,31 +9,25 @@ $user_id = $_SESSION['user_id'];
 /* ===== DELETE SELECTED ===== */
 if (isset($_POST['delete_selected']) && !empty($_POST['selected'])) {
 
-    $ids = $_POST['selected'];
+    $ids          = $_POST['selected'];
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
 
-    $sql = "DELETE FROM user_weather_history 
-            WHERE search_id IN ($placeholders) 
-            AND id = ?";
-
+    $sql  = "DELETE FROM user_weather_history 
+             WHERE search_id IN ($placeholders) 
+             AND id = ?";
     $stmt = $pdo->prepare($sql);
-    $params = array_merge($ids, [$user_id]);
-    $stmt->execute($params);
+    $stmt->execute(array_merge($ids, [$user_id]));
 }
 
 /* ===== CLEAR ALL HISTORY ===== */
 if (isset($_POST['clear_all'])) {
-    $stmt = $pdo->prepare("
-        DELETE FROM user_weather_history
-        WHERE id = ?
-    ");
+    $stmt = $pdo->prepare("DELETE FROM user_weather_history WHERE id = ?");
     $stmt->execute([$user_id]);
 }
 
 /* ===== GET HISTORY ===== */
 $stmt = $pdo->prepare("
-    SELECT * 
-    FROM user_weather_history
+    SELECT * FROM user_weather_history
     WHERE id = ?
     ORDER BY searched_at DESC
 ");
@@ -44,205 +38,105 @@ $title = "Weather History";
 renderHeader($title);
 ?>
 
-<style>
-
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f9fb;
-    margin: 0;
-}
-
-/* NAV */
-.nav {
-    padding: 15px 25px;
-    background-color: #1e88e5;
-}
-
-.nav a {
-    color: white;
-    margin-right: 15px;
-    text-decoration: none;
-}
-
-/* CONTAINER */
-.history-container {
-    margin: 20px;
-    padding: 25px;
-    background: white;
-    border-left: 6px solid #1e88e5;
-    border-radius: 6px;
-}
-
-/* SEARCH BAR */
-.search-bar {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    margin-top: 10px;
-}
-
-/* GRID */
-.card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
-}
-
-/* CARD */
-.card {
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    overflow: hidden;
-    position: relative;
-    transition: 0.3s;
-}
-
-.card:hover {
-    transform: translateY(-5px);
-}
-
-/* ICON (API) */
-.weather-icon {
-    display: block;
-    margin: 15px auto 0;
-    width: 80px;
-}
-
-/* CONTENT */
-.card-content {
-    padding: 15px;
-    text-align: center;
-}
-
-.card-content h3 {
-    margin: 5px 0;
-    color: #1e88e5;
-}
-
-/* CHECKBOX */
-.card-checkbox {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-}
-
-/* BUTTONS */
-button {
-    padding: 10px 14px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-top: 15px;
-}
-
-.delete-btn {
-    background: #e53935;
-    color: white;
-}
-
-.clear-btn {
-    background: #ef6c00;
-    color: white;
-}
-
-</style>
+<link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/history.css">
 
 <div class="nav">
-<a href="<?php echo BASE_URL; ?>/user/dashboard.php">Dashboard</a>
-<a href="<?php echo BASE_URL; ?>/users/history.php">History</a>
-<a href="<?php echo BASE_URL; ?>/auth/signout.php">Logout</a>
+  <a href="<?php echo BASE_URL; ?>/user/dashboard.php">Dashboard</a>
+  <a href="<?php echo BASE_URL; ?>/users/history.php">History</a>
+  <a href="<?php echo BASE_URL; ?>/auth/signout.php">Logout</a>
 </div>
 
 <div class="history-container">
 
-<h2>Your Weather Search History</h2>
+  <h2>Your Weather Search History</h2>
 
-<!-- SEARCH BAR -->
-<input type="text" id="searchInput" class="search-bar" placeholder="Search location or condition...">
+  <input type="text"
+         id="searchInput"
+         class="search-bar"
+         placeholder="Search location or condition…">
 
-<form method="POST">
+  <form method="POST">
 
-<div class="card-grid" id="cardGrid">
+    <div class="card-grid" id="cardGrid">
 
-<?php if ($history): ?>
+      <?php if ($history): ?>
 
-<?php foreach ($history as $row): 
+        <?php foreach ($history as $i => $row):
+          $icon    = !empty($row['icon']) ? $row['icon'] : '01d';
+          $iconUrl = "https://openweathermap.org/img/wn/{$icon}@2x.png";
+          $delay   = $i * 0.05;
+        ?>
 
-    // 🔥 Use stored icon if you have one, otherwise default
-    $icon = !empty($row['icon']) ? $row['icon'] : "01d"; 
-    $iconUrl = "https://openweathermap.org/img/wn/" . $icon . "@2x.png";
+        <div class="card"
+             data-search="<?php echo strtolower($row['location'] . ' ' . $row['cond']); ?>"
+             style="animation-delay: <?php echo $delay; ?>s">
 
-?>
+          <input type="checkbox"
+                 class="card-checkbox"
+                 name="selected[]"
+                 value="<?php echo $row['search_id']; ?>">
 
-<div class="card" data-search="<?php echo strtolower($row['location'] . ' ' . $row['cond']); ?>">
+          <img src="<?php echo $iconUrl; ?>"
+               class="weather-icon"
+               alt="<?php echo htmlspecialchars($row['cond']); ?>">
 
-<input type="checkbox" 
-       class="card-checkbox"
-       name="selected[]" 
-       value="<?php echo $row['search_id']; ?>">
+          <div class="card-content">
 
-<img src="<?php echo $iconUrl; ?>" class="weather-icon">
+            <h3><?php echo htmlspecialchars($row['location']); ?></h3>
 
-<div class="card-content">
+            <div class="date-badge">
+              <?php echo date('M d, Y · g:i A', strtotime($row['searched_at'])); ?>
+            </div>
 
-<h3><?php echo htmlspecialchars($row['location']); ?></h3>
+            <p><strong><?php echo $row['temperature']; ?>°C</strong></p>
+            <p><?php echo htmlspecialchars($row['cond']); ?></p>
+            <p>💧 Humidity: <?php echo $row['humidity']; ?>%</p>
+            <p>🌬 Wind: <?php echo $row['wind_speed']; ?> m/s</p>
 
-<p><strong>Date:</strong> <?php echo $row['searched_at']; ?></p>
-<p><strong>Temp:</strong> <?php echo $row['temperature']; ?> °C</p>
-<p><strong><?php echo htmlspecialchars($row['cond']); ?></strong></p>
-<p>Humidity: <?php echo $row['humidity']; ?> %</p>
-<p>Wind: <?php echo $row['wind_speed']; ?> m/s</p>
-<p><strong>👕 <?php echo htmlspecialchars($row['cloth_rec']); ?></strong></p>
+            <div class="cloth-rec">
+              👕 <?php echo htmlspecialchars($row['cloth_rec']); ?>
+            </div>
+
+          </div>
+
+        </div>
+
+        <?php endforeach; ?>
+
+      <?php else: ?>
+
+        <div class="empty-state">
+          No search history yet.<br>Head to the dashboard to look up your first city!
+        </div>
+
+      <?php endif; ?>
+
+    </div>
+
+    <div class="btn-row">
+
+      <button type="submit" name="delete_selected" class="delete-btn">
+        🗑 Delete Selected
+      </button>
+
+      <button type="submit" name="clear_all" class="clear-btn"
+              onclick="return confirm('Delete ALL history? This cannot be undone.');">
+        ✕ Clear All History
+      </button>
+
+    </div>
+
+  </form>
 
 </div>
 
-</div>
-
-<?php endforeach; ?>
-
-<?php else: ?>
-
-<p>No search history found.</p>
-
-<?php endif; ?>
-
-</div>
-
-<br>
-
-<button type="submit" name="delete_selected" class="delete-btn">
-Delete Selected
-</button>
-
-<button type="submit" name="clear_all" class="clear-btn"
-onclick="return confirm('Delete ALL history?');">
-Clear All History
-</button>
-
-</form>
-
-</div>
-
-<!-- 🔍 SEARCH SCRIPT -->
 <script>
-document.getElementById('searchInput').addEventListener('keyup', function() {
-
-    let value = this.value.toLowerCase();
-    let cards = document.querySelectorAll('.card');
-
-    cards.forEach(card => {
-        let text = card.getAttribute('data-search');
-
-        if (text.includes(value)) {
-            card.style.display = "block";
-        } else {
-            card.style.display = "none";
-        }
-    });
-
+document.getElementById('searchInput').addEventListener('keyup', function () {
+  const value = this.value.toLowerCase();
+  document.querySelectorAll('.card').forEach(card => {
+    const text = card.getAttribute('data-search');
+    card.style.display = text.includes(value) ? '' : 'none';
+  });
 });
 </script>
 

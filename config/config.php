@@ -6,7 +6,7 @@ $dbname = 'sample_php_pdo';
 $username = 'root';
 $password = '';
 
-define('BASE_URL', 'http://localhost/app');
+define('BASE_URL', 'http://localhost/CommuRide');
 
 
 try {

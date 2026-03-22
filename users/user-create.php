@@ -6,50 +6,44 @@ requireLogin();
 
 $currentRole = $_SESSION['role'];
 
-// Only admin and manager can create users
 if ($currentRole !== 'admin' && $currentRole !== 'manager') {
     die("Access denied. Only administrators and managers can create users.");
 }
 
-$message = '';
-$success = false;
+$message         = '';
+$success         = false;
 $verificationLink = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
-    $role = $_POST['role'] ?? 'user';
-    $send_email = isset($_POST['send_verification_email']) ? true : false;
+    $email      = $_POST['email']    ?? '';
+    $password   = $_POST['password'] ?? '';
+    $role       = $_POST['role']     ?? 'user';
+    $send_email = isset($_POST['send_verification_email']);
 
-    // Role restrictions based on current user's role
+    // Role restrictions
     if ($currentRole === 'manager') {
         $role = 'user';
     } elseif ($currentRole === 'admin') {
-        if (!in_array($role, ['admin', 'manager', 'user'])) {
-            $role = 'user';
-        }
+        if (!in_array($role, ['admin', 'manager', 'user'])) $role = 'user';
     }
 
     try {
-        // Email verification defaults
-        $email_verified = 1;
-        $verification_token = null;
+        $email_verified       = 1;
+        $verification_token   = null;
         $verification_expires = null;
 
         if ($send_email) {
-            $email_verified = 0;
-            $verification_token = bin2hex(random_bytes(32));
+            $email_verified       = 0;
+            $verification_token   = bin2hex(random_bytes(32));
             $verification_expires = date('Y-m-d H:i:s', strtotime('+24 hours'));
         }
 
-        // Insert user into database
         $stmt = $pdo->prepare("
-            INSERT INTO users 
-                (email, password, role, verification_token, is_verified, email_verification_expires, created_at) 
-            VALUES 
+            INSERT INTO users
+                (email, password, role, verification_token, is_verified, email_verification_expires, created_at)
+            VALUES
                 (:email, :password, :role, :token, :verified, :expires, NOW())
         ");
-
         $stmt->execute([
             ':email'    => $email,
             ':password' => password_hash($password, PASSWORD_DEFAULT),
@@ -61,79 +55,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $new_user_id = $pdo->lastInsertId();
 
-        // Log user creation
-        logActivity($pdo, $_SESSION['user_id'], $_SESSION['email'], 'user_created', 'success');
-        
-        // Log for the new user as well
-        logActivity($pdo, $new_user_id, $email, 'account_created', 'success');
+        logActivity($pdo, $_SESSION['user_id'], $_SESSION['email'], 'user_created',    'success');
+        logActivity($pdo, $new_user_id,         $email,            'account_created',  'success');
 
-        // Send verification email if requested
         if ($send_email) {
             $verificationLink = BASE_URL . "/auth/verify-email.php?token=" . $verification_token;
 
             $email_subject = "Verify Your Email Address";
-
-            $email_body = "
-            <html>
-            <head>
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: #1976d2; color: white; padding: 20px; text-align: center; }
-                    .content { background: #f9f9f9; padding: 30px; }
-                    .button { display: inline-block; padding: 12px 30px; background: #4caf50; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-                    .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
-                </style>
-            </head>
+            $email_body    = "
+            <html><head>
+            <style>
+              body{font-family:Arial,sans-serif;line-height:1.6;color:#333;}
+              .container{max-width:600px;margin:0 auto;padding:20px;}
+              .header{background:#15719f;color:white;padding:20px;text-align:center;border-radius:8px 8px 0 0;}
+              .content{background:#f9f9f9;padding:30px;}
+              .button{display:inline-block;padding:12px 30px;background:#62a1c7;color:white;text-decoration:none;border-radius:6px;margin:20px 0;}
+              .footer{text-align:center;margin-top:20px;color:#666;font-size:12px;}
+            </style></head>
             <body>
-                <div class='container'>
-                    <div class='header'>
-                        <h2>Email Verification</h2>
-                    </div>
-                    <div class='content'>
-                        <p>Hello,</p>
-                        <p>An account was created for this email. Please verify your email address.</p>
-                        <p style='text-align: center;'>
-                            <a href='{$verificationLink}' class='button'>Verify Email</a>
-                        </p>
-                        <p>If the button doesn't work, copy and paste this link:</p>
-                        <p style='word-break: break-all; color: #1976d2;'>{$verificationLink}</p>
-                        <p>This link expires in 24 hours.</p>
-                    </div>
-                    <div class='footer'>
-                        <p>&copy; " . date('Y') . " User Management System</p>
-                    </div>
+              <div class='container'>
+                <div class='header'><h2>⛅ CommuRide — Email Verification</h2></div>
+                <div class='content'>
+                  <p>Hello,</p>
+                  <p>An account was created for this email address on CommuRide. Please verify your email to get started.</p>
+                  <p style='text-align:center;'><a href='{$verificationLink}' class='button'>Verify Email Address</a></p>
+                  <p>If the button doesn't work, copy and paste this link into your browser:</p>
+                  <p style='word-break:break-all;color:#15719f;'>{$verificationLink}</p>
+                  <p><em>This link expires in 24 hours.</em></p>
                 </div>
-            </body>
-            </html>
-            ";
+                <div class='footer'><p>&copy; " . date('Y') . " CommuRide</p></div>
+              </div>
+            </body></html>";
 
-            // Set headers for HTML email
-            $headers = "MIME-Version: 1.0" . "\r\n";
-            $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-            $headers .= "From: noreply@ics-dev.io" . "\r\n";
+            $headers  = "MIME-Version: 1.0\r\n";
+            $headers .= "Content-type:text/html;charset=UTF-8\r\n";
+            $headers .= "From: noreply@ics-dev.io\r\n";
 
             if (mail($email, $email_subject, $email_body, $headers)) {
-                $message = "User created successfully! Verification email sent.";
-                
-                // Log email sent
+                $message = "User created successfully! Verification email sent to <strong>" . htmlspecialchars($email) . "</strong>.";
                 logActivity($pdo, $new_user_id, $email, 'verification_email_sent', 'success');
             } else {
-                $message = "User created successfully! Verification email failed to send.";
-                
-                // Log email failure
+                $message = "User created, but the verification email failed to send.";
                 logActivity($pdo, $new_user_id, $email, 'verification_email_sent', 'failed');
             }
         } else {
-            $message = "User created successfully! (Email verification skipped)";
+            $message = "User created successfully! Email verification was skipped — account is active immediately.";
         }
 
         $success = true;
 
-    } catch(PDOException $e) {
+    } catch (PDOException $e) {
         $message = "Error creating user: " . $e->getMessage();
-        
-        // Log failed user creation
         logActivity($pdo, $_SESSION['user_id'], $_SESSION['email'], 'user_created', 'failed');
     }
 }
@@ -141,81 +113,118 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $title = 'Create User';
 renderHeader($title);
 ?>
+
+<link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/admin.css">
+<link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/users.css">
+<link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/user-create.css">
+
+<!-- NAV -->
 <div class="nav">
-    <a href="<?php echo BASE_URL; ?>/users/dashboard.php">Back to Users</a>
+  <a href="<?php echo BASE_URL; ?>/users/dashboard.php" class="nav-back">Back to Users</a>
+  <a href="<?php echo BASE_URL; ?>/<?php echo $currentRole; ?>/dashboard.php">Dashboard</a>
+  <a href="<?php echo BASE_URL; ?>/auth/signout.php">Logout</a>
 </div>
 
+<!-- PAGE -->
+<div class="create-page">
 
-<div class="card">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+  <div class="card">
+
+    <!-- Accent stripe via CSS ::before -->
+
+    <div class="card-body">
+
+      <!-- Header -->
+      <div class="card-header">
         <h2>Create New User</h2>
         <span class="badge badge-<?php echo $currentRole; ?>"><?php echo ucfirst($currentRole); ?></span>
-    </div>
+      </div>
 
-    <?php if ($currentRole === 'manager'): ?>
-        <div class="info-box" style="background: #fff9c4; border-left-color: #ffa726;">
-            <strong>Manager Access:</strong> You can only create regular users.
+      <!-- Manager notice -->
+      <?php if ($currentRole === 'manager'): ?>
+        <div class="alert alert-warning">
+          <strong>Manager Access:</strong> You can only create regular users.
         </div>
-    <?php endif; ?>
+      <?php endif; ?>
 
-    <?php if ($message): ?>
-        <div class="<?php echo $success ? 'success' : 'error'; ?>">
-            <?php echo htmlspecialchars($message); ?>
+      <!-- Success / error feedback -->
+      <?php if ($message): ?>
+        <div class="alert <?php echo $success ? 'alert-success' : 'alert-error'; ?>">
+          <?php echo $message; ?>
         </div>
-    <?php endif; ?>
+      <?php endif; ?>
 
-    <?php if ($verificationLink): ?>
-        <div class="info-box">
-            <strong>📧 Email Verification Link (for testing):</strong><br>
-            <a href="<?php echo $verificationLink; ?>" target="_blank"><?php echo $verificationLink; ?></a>
-            <p style="margin-top: 10px; font-size: 13px; color: #666;">
-                In production, this link will be sent via email. The email has been queued.
-            </p>
+      <!-- Verification link (dev/testing) -->
+      <?php if ($verificationLink): ?>
+        <div class="alert alert-info">
+          <div>
+            <strong>Verification Link (for testing)</strong>
+            <div class="verify-link-box">
+              <a href="<?php echo $verificationLink; ?>" target="_blank"><?php echo $verificationLink; ?></a>
+              <p class="hint">In production this link is sent via email. It expires in 24 hours.</p>
+            </div>
+          </div>
         </div>
-    <?php endif; ?>
+      <?php endif; ?>
 
-    <form method="POST">
+      <!-- Form -->
+      <form method="POST" class="create-form">
+
         <div class="form-group">
-            <label for="email">Email Address:</label>
-            <input type="email" id="email" name="email" required placeholder="user@example.com">
+          <label for="email">Email Address</label>
+          <input type="email"
+                 id="email"
+                 name="email"
+                 placeholder="user@example.com"
+                 required>
         </div>
-        
+
         <div class="form-group">
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required placeholder="Enter password">
+          <label for="password">Password</label>
+          <input type="password"
+                 id="password"
+                 name="password"
+                 placeholder="Enter a secure password"
+                 required>
         </div>
-        
+
         <div class="form-group">
-            <label for="role">Role:</label>
-            <select id="role" name="role" <?php echo $currentRole === 'manager' ? 'disabled' : ''; ?>>
-                <option value="user">User</option>
-                <?php if ($currentRole === 'admin'): ?>
-                    <option value="manager">Manager</option>
-                    <option value="admin">Admin</option>
-                <?php endif; ?>
-            </select>
-            <?php if ($currentRole === 'manager'): ?>
-                <input type="hidden" name="role" value="user">
-                <small style="color: #666;">Managers can only create regular users</small>
+          <label for="role">Role</label>
+          <select id="role"
+                  name="role"
+                  <?php echo $currentRole === 'manager' ? 'disabled' : ''; ?>>
+            <option value="user">User</option>
+            <?php if ($currentRole === 'admin'): ?>
+              <option value="manager">Manager</option>
+              <option value="admin">Admin</option>
             <?php endif; ?>
+          </select>
+          <?php if ($currentRole === 'manager'): ?>
+            <input type="hidden" name="role" value="user">
+            <span class="field-hint">Managers can only create regular users.</span>
+          <?php endif; ?>
         </div>
-        
-        <div class="form-group">
-            <label style="display: flex; align-items: center; cursor: pointer;">
-                <input type="checkbox" name="send_verification_email" value="1" checked 
-                       style="width: auto; margin-right: 10px;">
-                <span>Send email verification (recommended)</span>
-            </label>
-            <small style="color: #666; margin-left: 30px;">
-                If unchecked, user will be verified immediately without email confirmation.
-            </small>
-        </div>
-        
-        <button type="submit">
-            <span class="material-icons" style="vertical-align: middle; font-size: 18px;">person_add</span>
-            Create User
+
+        <label class="checkbox-group">
+          <input type="checkbox"
+                 name="send_verification_email"
+                 value="1"
+                 checked>
+          <div class="checkbox-label">
+            <span>Send email verification</span>
+            <small>Recommended — user must verify their email before logging in. Uncheck to activate the account immediately.</small>
+          </div>
+        </label>
+
+        <button type="submit" class="btn-submit">
+          ＋ Create User
         </button>
-    </form>
-</div>
+
+      </form>
+
+    </div><!-- /.card-body -->
+  </div><!-- /.card -->
+
+</div><!-- /.create-page -->
 
 <?php renderFooter(); ?>

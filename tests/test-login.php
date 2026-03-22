@@ -1,6 +1,6 @@
 <?php
 require_once '../config/config.php';
-require_once __DIR__ . '/../config/functions.php';
+require_once __DIR__ . '../config/functions.php';
 
 // Generate fresh hash for password123
 $freshHash = password_hash('password123', PASSWORD_DEFAULT);
@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['quick_login'])) {
         $_SESSION['email'] = $user['email'];
         $_SESSION['role'] = $user['role'];
         
-        redirect('/app/' . $user['role'] . '/dashboard.php');
+        redirect('/CommuRide/' . $user['role'] . '/dashboard.php');
     }
 }
 
