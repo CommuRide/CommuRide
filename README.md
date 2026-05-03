@@ -1,60 +1,127 @@
-🌤️ About
+# 🌤️ CommuRide
 
-CommuRide is a web-based application that allows users to forecast weather conditions and receive clothing recommendations based on the current weather of a selected location. The system helps users make better daily decisions by suggesting appropriate outfits according to temperature and weather conditions.
+> A web-based weather forecasting and clothing recommendation system that helps users make smarter daily decisions.
 
-📖 Overview
+---
 
-This application integrates weather data retrieval with a recommendation system to provide users with:
+## 📖 Overview
 
-🌦️ Real-time weather forecasts
-📍 Location-based weather search
-👕 Smart clothing suggestions based on weather conditions
+CommuRide integrates real-time weather data retrieval with a smart recommendation engine to provide users with:
 
-By combining weather insights and practical recommendations, the system enhances user convenience and day-to-day planning.
-✨ Features
-👤 User Registration and Login System
-🔐 Secure Password Hashing using bcrypt
-🚘 Ride Request / Booking System
-🧑‍💼 Role-Based Access Control
-Admin
-Manager
-User
-📊 Dashboard for monitoring activity
-📝 Activity Logging System
-⚙️ User and Ride Management
-🛠️ Tech Stack
-Frontend: HTML, CSS, JavaScript
-Backend: PHP
-Database: MySQL
-⚙️ Installation
-1. Clone the Repository
+- 🌦️ **Real-time weather forecasts**
+- 📍 **Location-based weather search**
+- 👕 **Smart clothing suggestions** based on weather conditions
+
+By combining weather insights with practical outfit recommendations, CommuRide enhances user convenience and day-to-day planning.
+
+---
+
+## ✨ Features
+
+| Feature | Description |
+|---|---|
+| 👤 User Registration & Login | Secure account creation and authentication |
+| 🔐 Password Security | Bcrypt hashing via `password_default` |
+| 🚘 Ride Booking System | Request and manage rides |
+| 🧑‍💼 Role-Based Access Control | Admin, Manager, and User roles |
+| 📊 Activity Dashboard | Monitor and track system activity |
+| 📝 Activity Logging | Comprehensive audit trail |
+| ⚙️ User & Ride Management | Full CRUD operations |
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | HTML, CSS, JavaScript |
+| Backend | PHP |
+| Database | MySQL |
+| Local Server | XAMPP (Apache + MySQL) |
+
+---
+
+## ⚙️ Installation
+
+### 1. Clone the Repository
+
+```bash
 git clone https://github.com/CommuRide/CommuRide.git
-2. Move to Server Directory
-XAMPP → htdocs/
-3. Setup Database
-Open phpMyAdmin
-Create a database:
-commuride_db
-Import the provided .sql file
-4. Configure Database
+```
 
-Edit:
+### 2. Move to Server Directory
 
-/config/config.php
-$host = "localhost";
-$user = "root";
+Copy the project folder into your XAMPP `htdocs` directory:
+
+```
+C:/xampp/htdocs/CommuRide
+```
+
+### 3. Setup the Database
+
+1. Open **phpMyAdmin** (`http://localhost/phpmyadmin`)
+2. Create a new database named:
+   ```
+   commuride_db
+   ```
+3. Import the provided `.sql` file from `/db/schema.sql`
+
+### 4. Configure Database Connection
+
+Edit `/config/config.php` with your local credentials:
+
+```php
+$host     = "localhost";
+$user     = "root";
 $password = "";
 $database = "commuride_db";
-5. Run the Project
-Start Apache & MySQL
-Open browser:
-http://localhost/CommuRide
-🔐 Security
-Passwords are hashed using password_default
-Session-based authentication
-Role-based access restrictions
-📁 Project Structure
-Commuride/
+```
+
+### 5. Run the Project
+
+1. Start **Apache** and **MySQL** in XAMPP Control Panel
+2. Open your browser and navigate to:
+   ```
+   http://localhost/CommuRide
+   ```
+
+---
+
+## 📊 System Workflow
+
+```
+🔍 User enters a location
+        ↓
+🌐 System fetches weather data from API
+   (temperature, condition, humidity, etc.)
+        ↓
+🌡️ Weather data is processed & categorized
+   (hot / cold / rainy / humid)
+        ↓
+👕 Clothing recommendation is generated
+   Hot     → Light clothing
+   Rainy   → Jacket / Umbrella
+   Cold    → Layered clothing
+        ↓
+📊 Results displayed to the user
+        ↓
+🔁 User can search again for another location
+```
+
+---
+
+## 🔐 Security
+
+- Passwords are hashed using PHP's `password_hash()` with `PASSWORD_DEFAULT`
+- Session-based authentication enforced across all pages
+- Role-based access restrictions for Admin, Manager, and User routes
+
+---
+
+## 📁 Project Structure
+
+```
+CommuRide/
 │
 ├── admin/
 │   └── dashboard.php
@@ -67,8 +134,8 @@ Commuride/
 │   └── dashboard.php
 │
 ├── user/
-│   └── dashboard.php
-│   ├── save-history.php
+│   ├── dashboard.php
+│   └── save-history.php
 │
 ├── users/
 │   ├── dashboard.php
@@ -80,12 +147,12 @@ Commuride/
 │
 ├── assets/
 │   └── css/
-│       └── style.css
-│       └── admin.css
-│       └── history.css
-│       └── index.css
-│       └── user-create.css
-│       └── user-forms.css
+│       ├── style.css
+│       ├── admin.css
+│       ├── history.css
+│       ├── index.css
+│       ├── user-create.css
+│       ├── user-forms.css
 │       └── user.css
 │
 ├── config/
@@ -103,38 +170,39 @@ Commuride/
 │   ├── test-login.php
 │   └── test-mail.php
 │
-└── index.php   (login page)
-📊 System Workflow
-🔍 User enters a location
-The user searches for a city or place they want to check
-🌐 System fetches weather data
-The application sends a request to a weather API
-Retrieves real-time data (temperature, condition, humidity, etc.)
-🌡️ Weather data is processed
-The system analyzes the current weather conditions
-Identifies categories (e.g., hot, cold, rainy, humid)
-👕 Clothing recommendation is generated
-Based on predefined rules (e.g.,
-Hot → light clothing
-Rainy → jacket/umbrella
-Cold → layered clothing)
-📊 Results are displayed to the user
-Weather details are shown
-Suggested outfit recommendations are presented
-🔁 User can search again
-The process repeats for another location
+└── index.php          ← Login page (entry point)
+```
 
-Contributions are welcome!
+---
 
-Fork the repository
-Create a feature branch
-Commit your changes
-Open a Pull Request
-📄 License
+## 🤝 Contributing
 
-This project is for educational purposes and can be modified or reused.
+Contributions are welcome! Follow these steps:
 
-👩‍💻 Author
+1. **Fork** the repository
+2. **Create** a feature branch
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+3. **Commit** your changes
+   ```bash
+   git commit -m "Add: your feature description"
+   ```
+4. **Push** to your branch
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+5. **Open a Pull Request**
 
-CommuRide Team
-GitHub: https://github.com/CommuRide
+---
+
+## 📄 License
+
+This project is intended for **educational purposes** and may be freely modified or reused.
+
+---
+
+## 👩‍💻 Author
+
+**CommuRide Team**
+🔗 GitHub: [https://github.com/CommuRide](https://github.com/CommuRide)
