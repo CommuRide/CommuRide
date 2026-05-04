@@ -22,12 +22,9 @@ By combining weather insights with practical outfit recommendations, CommuRide e
 |---|---|
 | 👤 User Registration & Login | Secure account creation and authentication |
 | 🔐 Password Security | Bcrypt hashing via `password_default` |
-| 🚘 Ride Booking System | Request and manage rides |
-| 🧑‍💼 Role-Based Access Control | Admin, Manager, and User roles |
+| 🧑‍💼 Role-Based Access Control | Admin and User roles |
 | 📊 Activity Dashboard | Monitor and track system activity |
 | 📝 Activity Logging | Comprehensive audit trail |
-| ⚙️ User & Ride Management | Full CRUD operations |
-
 ---
 
 ## 🛠️ Tech Stack
