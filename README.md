@@ -16,15 +16,14 @@ By combining weather insights with practical outfit recommendations, CommuRide e
 
 ---
 
-## ✨ Features
+## ✨ Key Features
+ 
+- 🔍 **Search weather by location** — Look up any city or region instantly
+- 🌡️ **Current temperature and conditions** — Live temperature, humidity, and sky conditions
+- 👕 **Clothing recommendations** — Outfit suggestions tailored to the weather
+- 📊 **Simple, user-friendly interface** — Clean layout designed for fast access
+- ⚡ **Real-time data updates** — Always-fresh data pulled from live sources
 
-| Feature | Description |
-|---|---|
-| 👤 User Registration & Login | Secure account creation and authentication |
-| 🔐 Password Security | Bcrypt hashing via `password_default` |
-| 🧑‍💼 Role-Based Access Control | Admin and User roles |
-| 📊 Activity Dashboard | Monitor and track system activity |
-| 📝 Activity Logging | Comprehensive audit trail |
 ---
 
 ## 🛠️ Tech Stack
